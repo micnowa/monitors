@@ -6,12 +6,16 @@
 #define MONITORS_QUEUE_HPP
 
 #define COM_LEN 3
+#define NORMAL_CHAR '0'
+#define HIGH_CHAR '1'
+#define ULTRA_CHAR '2'
+
 
 typedef enum {
     NORMAL, HIGH, ULTRA
 } priority;
 
-//char priority_characters[] = {'0', '1', '2'};
+
 
 class Queue {
 private:

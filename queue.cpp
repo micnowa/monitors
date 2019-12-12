@@ -12,7 +12,7 @@ bool Queue::push(const char *c, int priority) {
     if (!_is_initialized() || _is_full()) return false;
 
     int pos = 0;
-    /** Rewriting communicates **/
+    /* Rewriting communicates */
     for (int j = 0; j < COM_LEN; j++) {
         char *characters = new char[(strlen(str[j]) + 2)];
         for (int i = 0; i <= (int) strlen(str[j]); i++) {
@@ -29,7 +29,7 @@ bool Queue::push(const char *c, int priority) {
         free(characters);
     }
 
-    /** Rewriting priorities **/
+    /* Rewriting priorities */
     int *integers = new int[max];
     for (int i = 0; i < strlen(str[0]); i++) {
         if (i == pos) priorities[i] = priority;
@@ -42,12 +42,12 @@ bool Queue::push(const char *c, int priority) {
 
 char *Queue::pop() {
     if (_is_empty()) return nullptr;
-    char *c = static_cast<char *>(malloc(sizeof(char) * (COM_LEN + 1)));
+    char *c = static_cast<char *>(malloc(sizeof(char) * (COM_LEN + 2)));
     for (int j = 0; j < COM_LEN; j++) {
         c[j] = (str[j])[0];
         for (int i = 0; i < max; i++) (str[j])[i] = (str[j])[i + 1];
         if (j == 0) {
-            /*switch (priorities[0]) {
+            switch (priorities[0]) {
                 case NORMAL:
                     c[COM_LEN] = '0';
                     break;
@@ -59,12 +59,12 @@ char *Queue::pop() {
                     break;
                 default:
                     break;
-            }*/
+            }
 
             for (int i = 0; i < max - 1; i++) priorities[i] = priorities[i + 1];
         }
     }
-    c[COM_LEN] = '\0';
+    c[COM_LEN + 1] = '\0';
     return c;
 }
 
@@ -82,6 +82,7 @@ bool Queue::destroy_queue() {
 
 void Queue::print_queue() {
     if (!strlen(str[0])) puts("Queue empty");
+    puts("Queue:");
     for (unsigned long i = 0; i < strlen(str[0]); i++) {
         for (unsigned long j = 0; j < COM_LEN; j++) printf("%c", str[j][i]);
         printf(", %d\n", priorities[i]);
