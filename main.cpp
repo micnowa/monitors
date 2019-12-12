@@ -20,16 +20,18 @@ char *sem_full_name[QUEUE_NUM] = {"sem_full_0", "sem_full_1", "sem_full_2"};
 
 sem_t *sem_empty[QUEUE_NUM];
 sem_t *sem_full[QUEUE_NUM];
+sem_t *console_mutex;
 
 Monitor<Queue> *queues_monitors[QUEUE_NUM];
 
 char com[] = {'A', 'B', 'C'};
-double pr = 0.30;
-int times = 20;
+double pr = -0.70;
+int times = 30;
 int sleep_ms_time = 500;
 int freq = 500;
 
 void initialize_semaphores() {
+    console_mutex = sem_open("console_mutex", O_CREAT, 0);
     for (int i = 0; i < QUEUE_NUM; i++) {
         sem_empty[i] = sem_open(sem_empty_name[i], O_CREAT, QUEUE_SIZE);
         sem_full[i] = sem_open(sem_full_name[i], O_CREAT, 0);
@@ -37,7 +39,9 @@ void initialize_semaphores() {
 }
 
 void producer(int q_n) {
-    std::cout << "producer " << q_n << std::endl;
+    sem_wait(console_mutex);
+    std::cout << "Producer " << q_n << std::endl;
+    sem_post(console_mutex);
     int counter = 0;
     char *signs = static_cast<char *>(malloc(sizeof(char) * (COM_LEN + 1)));
     signs[COM_LEN] = '\0';
@@ -47,7 +51,9 @@ void producer(int q_n) {
         usleep(MS_TO_US * sleep_ms_time);
         sem_wait(sem_empty[q_n]);
         queues_monitors[q_n]->operator->()->push(signs, NORMAL);
+        sem_wait(console_mutex);
         printf("Added %s(%d) to q[%d]\n", signs, NORMAL, q_n);
+        sem_post(console_mutex);
         sem_post(sem_full[q_n]);
         counter++;
     }
@@ -55,17 +61,19 @@ void producer(int q_n) {
 }
 
 void consumer(int q_n) {
-    std::cout << "consumer " << q_n << std::endl;
+    sem_wait(console_mutex);
+    std::cout << "Consumer " << q_n << std::endl;
+    sem_post(console_mutex);
     int counter = 0;
     int waiting = 0;
     while (counter != times) {
-        if (waiting) {
-            usleep(MS_TO_US * sleep_ms_time);
-            waiting--;
-        }
+        if (waiting) waiting--;
+        else usleep(MS_TO_US * sleep_ms_time);
         sem_wait(sem_full[q_n]);
         char *tmp = queues_monitors[q_n]->operator->()->pop();
+        sem_wait(console_mutex);
         printf("Consumed %s from q[%d]\n", tmp, q_n);
+        sem_post(console_mutex);
         sem_post(sem_empty[q_n]);
         if (tmp == nullptr) continue;
         if (tmp[COM_LEN] == ULTRA_CHAR) waiting += 5;
@@ -80,7 +88,9 @@ void consumer(int q_n) {
             new_tmp[COM_LEN] = '\0';
             sem_wait(sem_empty[q_n]);
             queues_monitors[q_n]->operator->()->push(tmp, NORMAL);
+            sem_wait(console_mutex);
             printf("Added %s(0) to q[%d]\n", tmp, q_n);
+            sem_post(console_mutex);
             sem_post(sem_full[q_n]);
             free(new_tmp);
         }
@@ -90,7 +100,9 @@ void consumer(int q_n) {
 }
 
 void special_producer() {
-    std::cout<<"Special producer"<<std::endl;
+    sem_wait(console_mutex);
+    std::cout << "Special producer" << std::endl;
+    sem_post(console_mutex);
     int counter = 0;
     char *signs = static_cast<char *>(malloc(sizeof(char) * (COM_LEN + 1)));
     signs[COM_LEN] = '\0';
@@ -100,14 +112,18 @@ void special_producer() {
         sem_wait(sem_empty[queue_number]);
         queues_monitors[queue_number]->operator->()->push(signs, HIGH);
         sem_post(sem_full[queue_number]);
-        printf("Added %s(1) to q[%d]\n", signs, queue_number);
+        sem_wait(console_mutex);
+        printf("Added %s(%d) to q[%d]\n", signs, HIGH, queue_number);
+        sem_post(console_mutex);
         usleep(MS_TO_US * sleep_ms_time);
         counter++;
     }
 }
 
 void protective_producer() {
-    printf("Protective producer O\n");
+    sem_wait(console_mutex);
+    printf("Protective producer\n");
+    sem_post(console_mutex);
     int sizes[QUEUE_NUM];
     int counter = 0;
     while (counter != times) {
@@ -117,7 +133,9 @@ void protective_producer() {
         char *signs = "   ";
         sem_wait(sem_empty[queue_num]);
         queues_monitors[queue_num]->operator->()->push(signs, ULTRA);
+        sem_wait(console_mutex);
         printf("Added %s(%d) to q[%d]\n", signs, ULTRA, queue_num);
+        sem_post(console_mutex);
         sem_post(sem_full[queue_num]);
         counter++;
     }
